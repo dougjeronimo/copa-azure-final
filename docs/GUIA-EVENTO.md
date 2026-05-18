@@ -464,4 +464,23 @@ Abra: **`https://fifa2026-web-<suffix>.azurewebsites.net`**
 
 ---
 
+## 🛡️ 7. Evolução de segurança (o "VAR" da arquitetura)
+
+> 🧠 **Tópico de aprendizado — não é passo do workshop.** O ambiente que você montou **já está bem desenhado**. Mas todo arquiteto pergunta: *"o que ainda falta para produção de verdade?"*
+
+**O que o Tickets já faz bem (e o Bolão ainda não):** aqui o **frontend e a API são Web Apps separados** — `fifa2026-web` (público) e `fifa2026-back` (privado, só aceita os IPs de saída do front via Access Restriction). Isso já é **defesa em profundidade**: a API não está acoplada ao site. Compare com o app **Bolão** (guia equivalente no outro repo), onde um único Web App serve as duas coisas — você vê, lado a lado, "simples para aprender" × "pronto para isolar". Esse contraste é metade do aprendizado.
+
+**O que um time de produção ainda endureceria:**
+
+1. **Application Gateway (WAF) na borda** — todo tráfego entra pelo App Gateway, que filtra ataques (WAF) e roteia `/` → `fifa2026-web` e `/api/*` → `fifa2026-back`. (A Access Restriction por IP de saída do front é boa, mas frágil — os IPs mudam; o App Gateway resolve isso de forma robusta.)
+2. **Private Endpoint na API e no banco** — `fifa2026-back` e o **Azure SQL** com Private Endpoint dentro de uma VNet; o backend e o banco deixam de ter qualquer exposição pública.
+3. **Frontend continua em Web App** (não Static Web App) — **de propósito**: Static Web App **não funciona como backend de Application Gateway**. Manter o front em Web App preserva a opção do App Gateway.
+4. **Segredos no Key Vault + Managed Identity** — mover `DB_PASSWORD`/`JWT_SECRET` das App Settings para um cofre, com identidade gerenciada (zero senha fora do Key Vault).
+
+> 📋 Esta direção (válida para os **dois** apps do evento) está registrada formalmente na **ADR-020** (no repositório do app Bolão, `DECISIONS.md`). **Não faz parte do escopo do evento** — é o "próximo nível".
+
+> 🆚 **Resumo do contraste:** o **Bolão** precisa **separar** front/API antes de poder isolar; o **Tickets** já separou — falta só **App Gateway + Private Endpoints**. Dois estágios do mesmo princípio: *cada camada só conversa com quem precisa*.
+
+---
+
 > 🏁 _Documento vivo — atualizado conforme o evento se aproxima (URL do repo público, dataset do bacpac, contagens). **Bola rolando!**_ ⚽🏆
